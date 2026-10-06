@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Colegios por Probabilidad de Reprobar</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" href="{{ asset('image/ite.ico') }}" type="image/x-icon">
+    <link rel="icon" href="{{ asset(config('brand.icon')) }}" type="image/png">
     <script>
         tailwind.config = {
             theme: {

@@ -32,7 +32,7 @@
                         <i class="fas fa-envelope"></i>
                         <div>
                             <h4>Email</h4>
-                            <p>colegios@ite.com.bo</p>
+                            <p>{{ config('brand.contact_email') }}</p>
                         </div>
                     </div>
                     

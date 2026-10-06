@@ -1,657 +1,127 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{{ asset('images/ite.ico') }}" type="image/x-icon">
-    <title>Colegios en Bolivia | Mapa Educativo con Geolocalización</title>
-    <meta name="description" content="Mapa interactivo de colegios en Bolivia con datos de ubicación, distritos y códigos RUE. Encuentra escuelas por departamento.">
-    <meta name="keywords" content="colegios Bolivia, mapa educativo, geolocalización escuelas, RUE Bolivia">
+@extends('layouts.app')
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            50: '#e6f8f5',
-                            100: '#b3ede3',
-                            200: '#80e2d1',
-                            300: '#4dd7bf',
-                            400: '#26baa5',
-                            500: '#1fa48f',
-                            600: '#188d78',
-                            700: '#127662',
-                            800: '#0b5f4c',
-                            900: '#044836',
-                        },
-                        secondary: {
-                            50: '#e8eef2',
-                            100: '#c3d3e0',
-                            200: '#9cb8cd',
-                            300: '#759dba',
-                            400: '#557ea3',
-                            500: '#375f7a',
-                            600: '#2d4d63',
-                            700: '#233b4c',
-                            800: '#192935',
-                            900: '#0f171f',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/vistas/welcome/mapa.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/vistas/welcome/unete.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/vistas/welcome/servicios.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/vistas/welcome/redes.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/vistas/welcome/style.css') }}">
-</head>
-<body class="bg-primary-50 text-secondary-800 min-h-screen">
+@section('title', 'Colegios de Bolivia | Directorio educativo de IFE Educabol')
+@section('meta_description', 'Busca colegios de Bolivia por nombre, código RUE, departamento, municipio o distrito. Explora datos educativos reales en IFE Educabol.')
 
-    <!-- Navbar (igual que antes) -->
-    <nav class="sticky top-0 z-50 bg-white shadow-sm border-b border-primary-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <a href="{{ url('/') }}" class="flex items-center gap-3 group">
-                    <div class="p-2 bg-primary-500 text-white rounded-lg group-hover:bg-primary-600 transition">
-                        <i class="fas fa-school text-lg"></i>
-                    </div>
-                    <span class="font-bold text-xl text-secondary-700">Colegios Bolivia</span>
-                </a>
+@push('head')
+<script type="application/ld+json">{!! json_encode([
+    '@context' => 'https://schema.org', '@type' => 'WebSite',
+    'name' => config('brand.platform_name'), 'url' => route('home'),
+    'publisher' => ['@type' => 'EducationalOrganization', 'name' => config('brand.legal_name'), 'url' => 'https://'.config('brand.domain')],
+    'potentialAction' => ['@type' => 'SearchAction', 'target' => route('home').'?search={search_term_string}', 'query-input' => 'required name=search_term_string'],
+], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}</script>
+@endpush
 
-                <ul class="hidden lg:flex items-center gap-8">
-                    <li><a href="{{ url('/') }}" class="font-medium text-secondary-700 hover:text-primary-600 transition">Inicio</a></li>
-                    <li class="relative group">
-                        <button class="font-medium text-secondary-700 hover:text-primary-600 flex items-center gap-1 transition">
-                            Rankings <i class="fas fa-chevron-down text-xs"></i>
-                        </button>
-                        <div class="absolute left-0 mt-4 w-72 bg-white rounded-xl shadow-lg border border-primary-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                            <div class="py-2">
-                                @if(Auth::check())
-                                    <a href="{{ url('/rankings?tipo=reprobacion') }}" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2">
-                                        <i class="fas fa-chart-line text-red-600"></i> Reprobados
-                                    </a>
-                                    <a href="{{ url('/rankings?tipo=matricula') }}" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2">
-                                        <i class="fas fa-users text-primary-600"></i> Matrícula
-                                    </a>
-                                    <a href="{{ url('/rankings?tipo=abandono') }}" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2">
-                                        <i class="fas fa-user-times text-orange-600"></i> Abandono escolar
-                                    </a>
-                                    <a href="{{ url('/rankings?tipo=infraestructura') }}" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2">
-                                        <i class="fas fa-building text-secondary-600"></i> Infraestructura
-                                    </a>
-                                @else
-                                    <a href="/admin/login" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2 opacity-60 cursor-not-allowed">
-                                        <i class="fas fa-chart-line text-red-600"></i> Reprobados <i class="fas fa-lock text-primary-500 ml-1"></i>
-                                    </a>
-                                    <a href="/admin/login" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2 opacity-60 cursor-not-allowed">
-                                        <i class="fas fa-users text-primary-600"></i> Matrícula <i class="fas fa-lock text-primary-500 ml-1"></i>
-                                    </a>
-                                    <a href="/admin/login" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2 opacity-60 cursor-not-allowed">
-                                        <i class="fas fa-user-times text-orange-600"></i> Abandono escolar <i class="fas fa-lock text-primary-500 ml-1"></i>
-                                    </a>
-                                    <a href="/admin/login" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2 opacity-60 cursor-not-allowed">
-                                        <i class="fas fa-building text-secondary-600"></i> Infraestructura <i class="fas fa-lock text-primary-500 ml-1"></i>
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-                    </li>
-                    <li class="relative group">
-                        <button class="font-medium text-secondary-700 hover:text-primary-600 flex items-center gap-1 transition">
-                            Mapa <i class="fas fa-chevron-down text-xs"></i>
-                        </button>
-                        <div class="absolute left-0 mt-4 w-56 bg-white rounded-xl shadow-lg border border-primary-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                            <div class="py-2">
-                                @if(Auth::check())
-                                    <a href="{{ url('/mapa') }}" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2">
-                                        <i class="fas fa-map-marked-alt text-primary-600"></i> Mapa interactivo
-                                    </a>
-                                    <a href="{{ url('/panel-aplazados-calor') }}" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2">
-                                        <i class="fas fa-fire text-orange-600"></i> Mapa de calor de aplazados
-                                    </a>
-                                    <a href="{{ url('/municipios-aplazados') }}" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2">
-                                        <i class="fas fa-city text-red-600"></i> Más aplazados por municipio
-                                    </a>
-                                @else
-                                    <a href="/admin/login" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2 opacity-60 cursor-not-allowed">
-                                        <i class="fas fa-map-marked-alt text-primary-600"></i> Mapa interactivo <i class="fas fa-lock text-primary-500 ml-1"></i>
-                                    </a>
-                                    <a href="/admin/login" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2 opacity-60 cursor-not-allowed">
-                                        <i class="fas fa-fire text-orange-600"></i> Mapa de calor de aplazados <i class="fas fa-lock text-primary-500 ml-1"></i>
-                                    </a>
-                                    <a href="/admin/login" class="block px-5 py-3 hover:bg-primary-50 transition flex items-center gap-2 opacity-60 cursor-not-allowed">
-                                        <i class="fas fa-city text-red-600"></i> Más aplazados por municipio <i class="fas fa-lock text-primary-500 ml-1"></i>
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-                    </li>
-                </ul>
-
-                <button id="nav-toggle" class="lg:hidden p-2 rounded-lg hover:bg-primary-50 text-secondary-700">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Mobile Menu (mantener el mismo acordeón que antes) -->
-        <div id="nav-mobile" class="hidden lg:hidden bg-white border-t border-primary-100">
-            <div class="px-4 py-4 space-y-1">
-                <a href="{{ url('/') }}" class="block py-3 px-4 rounded-lg hover:bg-primary-50 font-medium">Inicio</a>
-                <button data-accordion="rankings" class="w-full flex justify-between items-center py-3 px-4 rounded-lg hover:bg-primary-50 font-medium">
-                    Rankings <i class="fas fa-chevron-down"></i>
-                </button>
-                <div id="acc-rankings" class="hidden pl-4">
-                    @if(Auth::check())
-                        <a href="{{ url('/rankings?tipo=reprobacion') }}" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2">
-                            <i class="fas fa-chart-line text-red-600"></i> Reprobados
-                        </a>
-                        <a href="{{ url('/rankings?tipo=matricula') }}" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2">
-                            <i class="fas fa-users text-primary-600"></i> Matrícula
-                        </a>
-                        <a href="{{ url('/rankings?tipo=abandono') }}" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2">
-                            <i class="fas fa-user-times text-orange-600"></i> Abandono escolar
-                        </a>
-                        <a href="{{ url('/rankings?tipo=infraestructura') }}" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2">
-                            <i class="fas fa-building text-secondary-600"></i> Infraestructura
-                        </a>
-                    @else
-                        <a href="/admin/login" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2 opacity-60 cursor-not-allowed">
-                            <i class="fas fa-chart-line text-red-600"></i> Reprobados <i class="fas fa-lock text-primary-500 ml-1"></i>
-                        </a>
-                        <a href="/admin/login" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2 opacity-60 cursor-not-allowed">
-                            <i class="fas fa-users text-primary-600"></i> Matrícula <i class="fas fa-lock text-primary-500 ml-1"></i>
-                        </a>
-                        <a href="/admin/login" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2 opacity-60 cursor-not-allowed">
-                            <i class="fas fa-user-times text-orange-600"></i> Abandono escolar <i class="fas fa-lock text-primary-500 ml-1"></i>
-                        </a>
-                        <a href="/admin/login" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2 opacity-60 cursor-not-allowed">
-                            <i class="fas fa-building text-secondary-600"></i> Infraestructura <i class="fas fa-lock text-primary-500 ml-1"></i>
-                        </a>
-                    @endif
-                </div>
-               
-                <button data-accordion="mapa" class="w-full flex justify-between items-center py-3 px-4 rounded-lg hover:bg-primary-50 font-medium">
-                    Mapa <i class="fas fa-chevron-down"></i>
-                </button>
-                <div id="acc-mapa" class="hidden pl-4">
-                    @if(Auth::check())
-                        <a href="{{ url('/mapa') }}" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2">
-                            <i class="fas fa-map-marked-alt text-primary-600"></i> Mapa interactivo
-                        </a>
-                        <a href="{{ url('/panel-aplazados-calor') }}" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2">
-                            <i class="fas fa-fire text-orange-600"></i> Mapa de calor de aplazados
-                        </a>
-                        <a href="{{ url('/municipios-aplazados') }}" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2">
-                            <i class="fas fa-city text-red-600"></i> Más aplazados por municipio
-                        </a>
-                    @else
-                        <a href="/admin/login" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2 opacity-60 cursor-not-allowed">
-                            <i class="fas fa-map-marked-alt text-primary-600"></i> Mapa interactivo <i class="fas fa-lock text-primary-500 ml-1"></i>
-                        </a>
-                        <a href="/admin/login" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2 opacity-60 cursor-not-allowed">
-                            <i class="fas fa-fire text-orange-600"></i> Mapa de calor de aplazados <i class="fas fa-lock text-primary-500 ml-1"></i>
-                        </a>
-                        <a href="/admin/login" class="block py-2 px-2 rounded-lg hover:bg-primary-50 flex items-center gap-2 opacity-60 cursor-not-allowed">
-                            <i class="fas fa-city text-red-600"></i> Más aplazados por municipio <i class="fas fa-lock text-primary-500 ml-1"></i>
-                        </a>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <!-- Hero -->
-        <div class="text-center mb-16">
-            <h1 class="text-4xl sm:text-5xl font-bold text-secondary mb-6">
-                <span style="background: linear-gradient(90deg, rgb(55,95,122) 0%, rgb(38,186,165) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-fill-color: transparent;">
-                    Directorio Nacional de Colegios de Bolivia
-                </span>
-            </h1>
-            <div class="text-xl text-secondary-600 max-w-4xl mx-auto mb-8 min-h-[3.5rem]">
-                
-            <script>
-                @php
-                    $messagesArray = ($serviceMessages->count() > 0)
-                        ? $serviceMessages->map(function($m) {
-                            return [
-                                'message' => $m->message,
-                                'service' => $m->service,
-                                'boton' => $m->boton,
-                                'whatsapp' => $m->whatsapp
-                            ];
-                        })->values()->all()
-                        : [[
-                            'message' => 'Accede a datos actualizados sobre matrícula, reprobación, abandono, infraestructura y conectividad de todas las instituciones educativas del país.',
-                            'service' => '',
-                            'boton' => '',
-                            'whatsapp' => ''
-                        ]];
-                @endphp
-                const messages = @json($messagesArray);
-                let msgIndex = 0;
-                let charIndex = 0;
-                const typewriter = document.getElementById('typewriter');
-                const serviceInfo = document.getElementById('service-info');
-
-                function typeMessage() {
-                    if (!typewriter) return;
-                    const msg = messages[msgIndex].message;
-                    if (charIndex < msg.length) {
-                        typewriter.textContent += msg[charIndex];
-                        charIndex++;
-                        setTimeout(typeMessage, 40);
-                    } else {
-                        showServiceInfo();
-                        setTimeout(eraseMessage, 1800);
-                    }
-                }
-                function eraseMessage() {
-                    if (!typewriter) return;
-                    if (charIndex > 0) {
-                        typewriter.textContent = messages[msgIndex].message.substring(0, charIndex - 1);
-                        charIndex--;
-                        setTimeout(eraseMessage, 18);
-                    } else {
-                        hideServiceInfo();
-                        msgIndex = (msgIndex + 1) % messages.length;
-                        setTimeout(typeMessage, 400);
-                    }
-                }
-                function showServiceInfo() {
-                    if (!serviceInfo) return;
-                    const { service, boton, whatsapp } = messages[msgIndex];
-                    let html = '';
-                    if (service) {
-                        html += `<span class='font-semibold text-primary-700'>${service}</span>`;
-                    }
-                    if (boton && whatsapp) {
-                        const url = `https://wa.me/59171039910?text=${encodeURIComponent(whatsapp)}`;
-                        html += ` <a href='${url}' target='_blank' class='ml-2 px-4 py-2 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition'>${boton}</a>`;
-                    }
-                    serviceInfo.innerHTML = html;
-                }
-                function hideServiceInfo() {
-                    if (serviceInfo) serviceInfo.innerHTML = '';
-                }
-                document.addEventListener('DOMContentLoaded', () => {
-                    typewriter.textContent = '';
-                    typeMessage();
-                });
-            </script>
-            <!-- Buscador de colegios responsivo con radio buttons -->
-            <form method="GET" action="{{ route('home') }}" class="max-w-2xl mx-auto w-full flex flex-col sm:flex-row gap-4 items-center justify-center mt-6">
-                <div class="flex flex-col items-center w-full">
-                    <div class="flex flex-row gap-6 items-center justify-center mb-2">
-                        <label class="inline-flex items-center cursor-pointer">
-                            <input type="radio" name="filter" value="nombre" class="form-radio text-primary-500" {{ request('filter', 'nombre') == 'nombre' ? 'checked' : '' }}>
-                            <span class="ml-2 text-secondary-700 text-sm">Nombre</span>
-                        </label>
-                        <label class="inline-flex items-center cursor-pointer">
-                            <input type="radio" name="filter" value="codigo" class="form-radio text-primary-500" {{ request('filter') == 'codigo' ? 'checked' : '' }}>
-                            <span class="ml-2 text-secondary-700 text-sm">Código RUE</span>
-                        </label>
-                    </div>
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar por nombre o código RUE" class="w-[90%] max-w-2xl px-4 py-3 rounded-lg border border-primary-200 focus:ring-2 focus:ring-primary-400 outline-none mx-auto mb-3" required>
-                    <button type="submit" class="w-[70%] max-w-xs mx-auto px-6 py-3 rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600 transition flex items-center gap-2 justify-center mt-1">
-                        <i class="fas fa-search"></i> Buscar
-                    </button>
+@section('content')
+<section class="hero" id="buscar">
+    <div class="shell hero-grid">
+        <div class="hero-copy">
+            <span class="eyebrow"><i class="fa-solid fa-graduation-cap"></i> {{ config('brand.name') }}</span>
+            <h1>Encuentra y conoce los <span>colegios de Bolivia</span></h1>
+            <p>Consulta información educativa por colegio, código RUE, departamento, municipio o distrito desde un directorio nacional claro y accesible.</p>
+            <form class="search-panel" method="GET" action="{{ route('home') }}" role="search" aria-label="Buscar colegios de Bolivia">
+                <div class="search-fields">
+                    <div class="field"><label for="filter">Buscar por</label><select id="filter" name="filter"><option value="nombre" @selected($filter === 'nombre')>Todo</option><option value="codigo" @selected($filter === 'codigo')>Código RUE</option><option value="departamento" @selected($filter === 'departamento')>Departamento</option><option value="municipio" @selected($filter === 'municipio')>Municipio</option><option value="distrito" @selected($filter === 'distrito')>Distrito</option><option value="zona" @selected($filter === 'zona')>Zona</option></select></div>
+                    <div class="field"><label for="search">Nombre o ubicación</label><input id="search" name="search" value="{{ $search }}" placeholder="Ej.: Unidad Educativa, La Paz o 8073…" autocomplete="off"></div>
+                    <button class="button" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
                 </div>
             </form>
-            @if(isset($schools) && $schools->count())
-                <div class="mt-8 max-w-3xl mx-auto text-left">
-                    <h2 class="text-lg font-semibold mb-2">Resultados de búsqueda:</h2>
-                    <ul class="divide-y divide-primary-100">
-                        @foreach($schools as $school)
-                            <li class="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <a href="{{ route('schools.show', $school->id) }}" class="font-bold text-primary-700 hover:underline">{{ $school->nombre }}</a>
-                                    <div class="mt-1" style="font-size: 11px; color: rgb(121, 121, 121);">
-                                        @if($school->ubicacion->departamento)
-                                            <span class="mr-2"><i class="fas fa-map-marker-alt"></i> {{ $school->ubicacion->departamento }}</span>
-                                        @endif
-                                        @if($school->ubicacion->provincia)
-                                            <span class="mr-2">Provincia: {{ $school->ubicacion->provincia }}</span>
-                                        @endif
-                                        @if($school->ubicacion->municipio)
-                                            <span class="mr-2">Municipio: {{ $school->ubicacion->municipio }}</span>
-                                        @endif
-                                        @if($school->ubicacion->distrito)
-                                            <span class="mr-2">Distrito: {{ $school->ubicacion->distrito }}</span>
-                                        @endif
-                                        @if($school->ubicacion->direccion)
-                                            <span class="mr-2">Dirección: {{ $school->ubicacion->direccion }}</span>
-                                        @endif
-                                        @if($school->dependencia)
-                                            <span class="mr-2">Dependencia: {{ $school->dependencia }}</span>
-                                        @endif
-                                    </div>
-                                </div>
-                                <a href="{{ route('schools.show', $school->id) }}" class="text-primary-600 hover:underline text-xs mt-2 sm:mt-0">Ver detalle</a>
-                            </li>
-                        @endforeach
-                    </ul>
-                    <div class="mt-4">{{ $schools->links('vendor.pagination.default') }}</div>
-                </div>
-            @elseif(request('search'))
-                <div class="mt-8 max-w-2xl mx-auto text-center text-red-600 font-semibold">No se encontraron colegios con ese criterio.</div>
-            @endif
         </div>
+        <div class="hero-brand"><img src="{{ asset(config('brand.logo')) }}" alt="{{ config('brand.name') }}, Instituto de Formación Educabol" width="520" height="420"></div>
+    </div>
+</section>
 
-        <!-- KPIs principales -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div class="bg-white rounded-2xl shadow-sm p-6 border border-primary-100">
-                <div class="flex items-center gap-4">
-                    <div class="p-4 bg-primary-100 rounded-xl text-primary-600">
-                        <i class="fas fa-school text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-secondary-600">Total de colegios</p>
-                        <p class="text-3xl font-bold text-secondary-800">{{ $kpis['total'] ?? '—' }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm p-6 border border-primary-100">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-sm text-secondary-600">Colegio más poblado</p>
-                        <p class="text-xl font-bold text-secondary-800">{{ $highlights['top_matricula']['nombre'] ?? '—' }}</p>
-                    </div>
-                    <span class="px-4 py-2 text-sm font-medium bg-primary-100 text-primary-700 rounded-full">
-                        {{ $highlights['top_matricula']['valor'] ?? '—' }}
-                    </span>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm p-6 border border-primary-100">
-                <div class="flex items-center gap-4">
-                    <div class="p-4 bg-red-100 rounded-xl text-red-600">
-                        <i class="fas fa-arrow-trend-up text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-secondary-600">Reprobación promedio</p>
-                        <p class="text-3xl font-bold text-secondary-800">{{ $kpis['rep_prom'] ?? '—' }}<span class="text-xl">%</span></p>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm p-6 border border-primary-100">
-                <div class="flex items-center gap-4">
-                    <div class="p-4 bg-orange-100 rounded-xl text-orange-600">
-                        <i class="fas fa-right-from-bracket text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-secondary-600">Abandono promedio</p>
-                        <p class="text-3xl font-bold text-secondary-800">{{ $kpis['aban_prom'] ?? '—' }}<span class="text-xl">%</span></p>
-                    </div>
-                </div>
-            </div>
-        </section>
+@if($search !== '')
+<section class="section section--white" aria-labelledby="results-title">
+    <div class="shell">
+        <div class="results-bar"><div><span class="eyebrow">Resultados</span><h2 id="results-title">Colegios encontrados para “{{ $search }}”</h2></div><span>{{ $schools->total() }} coincidencias</span></div>
+        @if($schools->count())<div class="school-grid">@foreach($schools as $school)<x-school-card :school="$school" />@endforeach</div><div class="pagination-wrap">{{ $schools->links() }}</div>@else<div class="empty-state"><i class="fa-regular fa-folder-open"></i><p>No encontramos colegios con esos criterios. Prueba con otra palabra o ubicación.</p></div>@endif
+    </div>
+</section>
+@endif
 
-        <!-- Opciones principales (tarjetas grandes de acción) -->
-        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 relative">
-            @php $isGuest = !Auth::check(); @endphp
-            <a href="{{ route('home') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-primary-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-primary-500 group-hover:text-white transition">
-                    <i class="fas fa-search text-3xl text-primary-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Buscar un colegio</h3>
-                <p class="text-secondary-600 mb-6">Encuentra cualquier institución por nombre, código RUE, distrito o ubicación.</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">
-                    Ir al buscador → 
-                </span>
-            </a>
-            <a href="{{ url('/colegios-mas-reprobados') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-red-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-red-500 group-hover:text-white transition">
-                    <i class="fas fa-chart-line text-3xl text-red-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Colegios con más reprobados</h3>
-                <p class="text-secondary-600 mb-6">Lista de colegios con mayor cantidad de estudiantes reprobados, por año.</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">
-                    Ver colegios → 
-                </span>
-            </a>
+<section class="section" aria-labelledby="stats-title"><div class="shell"><x-section-heading eyebrow="Datos disponibles" title="Bolivia educativa en cifras" description="Indicadores calculados únicamente con la información registrada en la plataforma." /><div class="stats-grid">
+    <article class="stat-card"><i class="fa-solid fa-school"></i><strong>{{ number_format($kpis['total'] ?? 0) }}</strong><span>Colegios registrados</span></article>
+    <article class="stat-card"><i class="fa-solid fa-map"></i><strong>{{ $locationStats['departments'] }}</strong><span>Departamentos</span></article>
+    <article class="stat-card"><i class="fa-solid fa-city"></i><strong>{{ number_format($locationStats['municipalities']) }}</strong><span>Municipios</span></article>
+    <article class="stat-card"><i class="fa-solid fa-map-location-dot"></i><strong>{{ number_format($locationStats['districts']) }}</strong><span>Distritos</span></article>
+</div></div></section>
 
-            <a href="{{ url('/ranking-mi-colegio') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-primary-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-primary-500 group-hover:text-white transition">
-                    <i class="fas fa-school text-3xl text-primary-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Ranking tu colegio</h3>
-                <p class="text-secondary-600 mb-6">Consulta el ranking de tu colegio a nivel Nacional, Departamental, Provincial, Municipal y Distrital.</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">
-                    Ver ranking →
-                </span>
-            </a>
-            <a href="{{ url('/rankings?tipo=matricula') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-primary-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-primary-500 group-hover:text-white transition">
-                    <i class="fas fa-users text-3xl text-primary-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Rankings de matrícula</h3>
-                <p class="text-secondary-600 mb-6">Colegios más y menos poblados, crecimiento anual y comparativas departamentales.</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">
-                    Explorar → 
-                </span>
-            </a>
-            <a href="{{ url('/rankings?tipo=abandono') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-orange-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-orange-500 group-hover:text-white transition">
-                    <i class="fas fa-user-times text-3xl text-orange-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Abandono escolar</h3>
-                <p class="text-secondary-600 mb-6">Departamentos críticos, comparación urbana/rural y tendencias.</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">
-                    Ver detalle → 
-                </span>
-            </a>
-            <a href="{{ url('/rankings?tipo=infraestructura') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-secondary-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-secondary-500 group-hover:text-white transition">
-                    <i class="fas fa-building text-3xl text-secondary-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Infraestructura</h3>
-                <p class="text-secondary-600 mb-6">Mejores y peores condiciones de ambientes, servicios y equipamiento.</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">
-                    Ver ranking → 
-                </span>
-            </a>
-            <a href="{{ url('/mapa') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-primary-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-primary-500 group-hover:text-white transition">
-                    <i class="fas fa-map-marked-alt text-3xl text-primary-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Mapa interactivo</h3>
-                <p class="text-secondary-600 mb-6">Visualiza todos los colegios geolocalizados con filtros por indicadores.</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">
-                    Abrir mapa → 
-                </span>
-            </a>
-            <a href="{{ url('/municipios-aplazados') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-red-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-red-500 group-hover:text-white transition">
-                    <i class="fas fa-city text-3xl text-red-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Colegios más aplazados por municipio</h3>
-                <p class="text-secondary-600 mb-6">Consulta el colegio con mayor reprobación en cada municipio y explora el detalle de cualquier municipio.</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">
-                    Ver municipios →
-                </span>
-            </a>
+<section class="section section--white" id="explorar"><div class="shell"><x-section-heading eyebrow="Explorar Bolivia" title="Nueve departamentos, una sola plataforma" description="Selecciona un departamento para consultar sus unidades educativas registradas." /><div class="department-grid">
+@foreach($departments as $department)<article class="department-card"><h3>{{ $department->departamento }}</h3><p>{{ number_format($department->schools_count) }} colegios</p><a href="{{ route('home', ['filter'=>'departamento','search'=>$department->departamento]) }}">Explorar <i class="fa-solid fa-arrow-right"></i></a></article>@endforeach
+</div></div></section>
 
-            <a href="{{ url('/panel-aplazados-calor') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-orange-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-orange-500 group-hover:text-white transition">
-                    <i class="fas fa-fire text-3xl text-orange-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Mapa de calor de aplazados</h3>
-                <p class="text-secondary-600 mb-6">Visualiza los colegios de Bolivia por intensidad de aplazados, con filtros por año y ubicación.</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">
-                    Ver mapa de calor â†’
-                </span>
-            </a>
+<section class="section"><div class="shell"><x-section-heading eyebrow="Directorio" title="Colegios para comenzar a explorar" description="Una selección de instituciones disponibles en el directorio." /><div class="school-grid">@foreach($featuredSchools as $school)<x-school-card :school="$school" />@endforeach</div></div></section>
 
-            <!-- Opciones adicionales solo visuales -->
-            <a href="#" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-secondary-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-secondary-500 group-hover:text-white transition">
-                    <i class="fas fa-balance-scale text-3xl text-secondary-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Distribución por dependencia</h3>
-                <p class="text-secondary-600 mb-6">Fiscal / Privada / Convenio</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver distribución →</span>
-            </a>
-            <a href="#" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-primary-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-primary-500 group-hover:text-white transition">
-                    <i class="fas fa-map text-3xl text-primary-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Distribución por área</h3>
-                <p class="text-secondary-600 mb-6">Rural vs Urbana</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver áreas →</span>
-            </a>
-            <a href="#" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-pink-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-pink-500 group-hover:text-white transition">
-                    <i class="fas fa-venus-mars text-3xl text-pink-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Resultados por género</h3>
-                <p class="text-secondary-600 mb-6">Promoción / Reprobación / Abandono</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver resultados →</span>
-            </a>
-            <a href="#" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-primary-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-primary-500 group-hover:text-white transition">
-                    <i class="fas fa-layer-group text-3xl text-primary-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Número de colegios por departamento</h3>
-                <p class="text-secondary-600 mb-6">Cantidad total de colegios por región</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver números →</span>
-            </a>
-            <a href="#" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-orange-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-orange-500 group-hover:text-white transition">
-                    <i class="fas fa-chart-area text-3xl text-orange-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Evolución de matrícula por departamento</h3>
-                <p class="text-secondary-600 mb-6">Crecimiento y variación anual</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver evolución →</span>
-            </a>
-            <a href="#" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-green-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-green-500 group-hover:text-white transition">
-                    <i class="fas fa-arrow-up text-3xl text-green-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Tasa de promoción por departamento</h3>
-                <p class="text-secondary-600 mb-6">Porcentaje de estudiantes promovidos</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver tasa →</span>
-            </a>
-            <a href="#" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-red-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-red-500 group-hover:text-white transition">
-                    <i class="fas fa-arrow-down text-3xl text-red-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Tasa de reprobación por departamento</h3>
-                <p class="text-secondary-600 mb-6">Porcentaje de estudiantes reprobados</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver tasa →</span>
-            </a>
-            <a href="#" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-orange-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-orange-500 group-hover:text-white transition">
-                    <i class="fas fa-user-slash text-3xl text-orange-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Tasa de abandono por departamento</h3>
-                <p class="text-secondary-600 mb-6">Porcentaje de abandono escolar</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver tasa →</span>
-            </a>
-            <a href="#" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-red-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-red-500 group-hover:text-white transition">
-                    <i class="fas fa-trophy text-3xl text-red-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Colegio con más aplazados (nacional)</h3>
-                <p class="text-secondary-600 mb-6">El colegio con mayor cantidad de reprobados en Bolivia</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver colegio →</span>
-            </a>
-            <a href="#" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-red-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-red-500 group-hover:text-white transition">
-                    <i class="fas fa-trophy text-3xl text-red-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Colegio con más aplazados por departamento</h3>
-                <p class="text-secondary-600 mb-6">El colegio con mayor reprobación en cada departamento</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver colegios →</span>
-            </a>
-            <a href="#" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-red-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-red-500 group-hover:text-white transition">
-                    <i class="fas fa-trophy text-3xl text-red-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Colegio con más aplazados por provincia</h3>
-                <p class="text-secondary-600 mb-6">El colegio con mayor reprobación en cada provincia</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver colegios →</span>
-            </a>
-            <a href="{{ url('/rankings?tipo=reprobacion&nivel=municipio') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-red-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-red-500 group-hover:text-white transition">
-                    <i class="fas fa-trophy text-3xl text-red-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Colegio con más aplazados por municipio</h3>
-                <p class="text-secondary-600 mb-6">El colegio con mayor reprobación en cada municipio</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver colegios →</span>
-            </a>
-            <a href="{{ url('/distritos-aplazados') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-red-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-red-500 group-hover:text-white transition">
-                    <i class="fas fa-trophy text-3xl text-red-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Colegio con más aplazados por distrito</h3>
-                <p class="text-secondary-600 mb-6">El colegio con mayor reprobación en cada distrito</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver colegios →</span>
-            </a>
-            <a href="{{ url('/distritos-municipales-aplazados') }}" class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-primary-100 p-8 transition-all duration-300 text-center card-protegida">
-                <div class="p-5 bg-red-100 rounded-2xl w-20 h-20 mx-auto mb-6 group-hover:bg-red-500 group-hover:text-white transition">
-                    <i class="fas fa-map-marked-alt text-3xl text-red-600 group-hover:text-white"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-secondary-800 mb-3">Colegios más aplazados por distrito municipal (SCZ)</h3>
-                <p class="text-secondary-600 mb-6">Ranking por distrito municipal usando el GeoJSON</p>
-                <span class="inline-flex items-center gap-2 text-primary-600 font-semibold group-hover:gap-4 transition">Ver distritos →</span>
-            </a>
-            @if($isGuest)
-            <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                document.querySelectorAll('.card-protegida').forEach(card => {
-                    card.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        window.location.href = '/admin/login';
-                    });
-                    card.classList.add('cursor-not-allowed','opacity-60','relative');
-                    // Agregar candado si no existe
-                    if (!card.querySelector('.lock-icon')) {
-                        const lock = document.createElement('div');
-                        lock.innerHTML = '<i class="fas fa-lock text-xl text-primary-500 drop-shadow-lg"></i>';
-                        lock.className = 'lock-icon absolute top-4 right-4 z-20 bg-white/80 rounded-full p-2 shadow-lg';
-                        card.appendChild(lock);
-                    }
-                });
-            });
-            </script>
-            @endif
-        </section>
+<section class="section section--white"><div class="shell"><x-section-heading eyebrow="Una herramienta para todos" title="Información educativa fácil de consultar" /><div class="benefit-grid">
+    <article class="benefit-card"><i class="fa-solid fa-magnifying-glass-location"></i><h3>Búsqueda centralizada</h3><p>Ubica instituciones por nombre, RUE o división territorial.</p></article>
+    <article class="benefit-card"><i class="fa-solid fa-chart-column"></i><h3>Datos comprensibles</h3><p>Consulta indicadores disponibles sin perderte en tablas extensas.</p></article>
+    <article class="benefit-card"><i class="fa-solid fa-mobile-screen-button"></i><h3>Acceso desde cualquier lugar</h3><p>Diseñada para celular, tableta y computadora, con navegación accesible.</p></article>
+</div></div></section>
 
-      
-    </main>
+@php
+    $analysisTools = [
+        ['buscar', 'Directorio', 'Buscar un colegio', 'Encuentra cualquier institución por nombre, código RUE, distrito o ubicación.', 'fa-magnifying-glass', 'Ir al buscador'],
+        ['colegios-reprobados', 'Reprobación', 'Colegios con más reprobados', 'Lista de colegios con mayor cantidad de estudiantes reprobados, por año.', 'fa-chart-line', 'Ver colegios'],
+        ['ranking-colegio', 'Rankings', 'Ranking tu colegio', 'Consulta el ranking de tu colegio a nivel Nacional, Departamental, Provincial, Municipal y Distrital.', 'fa-school', 'Ver ranking'],
+        ['ranking-matricula', 'Matrícula', 'Rankings de matrícula', 'Colegios más y menos poblados, crecimiento anual y comparativas departamentales.', 'fa-users', 'Explorar'],
+        ['abandono-escolar', 'Abandono', 'Abandono escolar', 'Departamentos críticos, comparación urbana/rural y tendencias.', 'fa-user-times', 'Ver detalle'],
+        ['infraestructura', 'Infraestructura', 'Infraestructura', 'Mejores y peores condiciones de ambientes, servicios y equipamiento.', 'fa-building', 'Ver ranking'],
+        ['mapa-interactivo', 'Mapas', 'Mapa interactivo', 'Visualiza los colegios geolocalizados con filtros por indicadores.', 'fa-map-marked-alt', 'Abrir mapa'],
+        ['aplazados-municipio-resumen', 'Reprobación', 'Colegios más aplazados por municipio', 'Consulta el colegio con mayor reprobación en cada municipio y explora el detalle de cualquier municipio.', 'fa-city', 'Ver municipios'],
+        ['mapa-calor-aplazados', 'Mapas', 'Mapa de calor de aplazados', 'Visualiza los colegios de Bolivia por intensidad de aplazados, con filtros por año y ubicación.', 'fa-fire', 'Ver mapa de calor'],
+        ['dependencia', 'Distribución', 'Distribución por dependencia', 'Fiscal / Privada / Convenio', 'fa-scale-balanced', 'Ver distribución'],
+        ['area', 'Distribución', 'Distribución por área', 'Rural vs Urbana', 'fa-map', 'Ver áreas'],
+        ['genero', 'Resultados', 'Resultados por género', 'Promoción / Reprobación / Abandono', 'fa-venus-mars', 'Ver resultados'],
+        ['colegios-departamento', 'Cobertura', 'Número de colegios por departamento', 'Cantidad total de colegios por región.', 'fa-layer-group', 'Ver números'],
+        ['evolucion-matricula', 'Matrícula', 'Evolución de matrícula por departamento', 'Crecimiento y variación anual.', 'fa-chart-area', 'Ver evolución'],
+        ['tasa-promocion', 'Promoción', 'Tasa de promoción por departamento', 'Porcentaje de estudiantes promovidos.', 'fa-arrow-trend-up', 'Ver tasa'],
+        ['tasa-reprobacion', 'Reprobación', 'Tasa de reprobación por departamento', 'Porcentaje de estudiantes reprobados.', 'fa-arrow-trend-down', 'Ver tasa'],
+        ['tasa-abandono', 'Abandono', 'Tasa de abandono por departamento', 'Porcentaje de abandono escolar.', 'fa-user-slash', 'Ver tasa'],
+        ['aplazados-nacional', 'Aplazados', 'Colegio con más aplazados (nacional)', 'El colegio con mayor cantidad de reprobados en Bolivia.', 'fa-trophy', 'Ver colegio'],
+        ['aplazados-departamento', 'Aplazados', 'Colegio con más aplazados por departamento', 'El colegio con mayor reprobación en cada departamento.', 'fa-map', 'Ver colegios'],
+        ['aplazados-provincia', 'Aplazados', 'Colegio con más aplazados por provincia', 'El colegio con mayor reprobación en cada provincia.', 'fa-mountain-sun', 'Ver colegios'],
+        ['aplazados-municipio', 'Aplazados', 'Colegio con más aplazados por municipio', 'El colegio con mayor reprobación en cada municipio.', 'fa-city', 'Ver colegios'],
+        ['aplazados-distrito', 'Aplazados', 'Colegio con más aplazados por distrito', 'El colegio con mayor reprobación en cada distrito.', 'fa-map-location-dot', 'Ver colegios'],
+        ['aplazados-distrito-municipal', 'Aplazados', 'Colegios más aplazados por distrito municipal (SCZ)', 'Ranking por distrito municipal usando la delimitación geográfica disponible.', 'fa-draw-polygon', 'Ver distritos'],
+    ];
+@endphp
+<section class="section tools-section" id="herramientas" aria-labelledby="tools-title">
+    <div class="shell">
+        <x-section-heading
+            eyebrow="Herramientas educativas"
+            title="Explora todos los análisis disponibles"
+            description="Conservamos cada buscador, ranking, mapa e informe de la plataforma y los organizamos en un catálogo más claro."
+        />
+        <div class="tools-grid">
+            @foreach($analysisTools as [$key, $category, $title, $description, $icon, $action])
+                @php $locked = !Auth::check(); @endphp
+                <a class="tool-card {{ $locked ? 'tool-card--locked' : '' }}" href="{{ route('reports.access', $key) }}" @if($locked) aria-label="{{ $title }}. Solo lectura; requiere iniciar sesión" @endif>
+                    <span class="tool-card__category">{{ $category }}</span>
+                    @if($locked)
+                        <span class="tool-card__watermark" aria-hidden="true">Solo lectura</span>
+                        <span class="tool-card__lock"><i class="fa-solid fa-lock" aria-hidden="true"></i></span>
+                    @endif
+                    <span class="tool-card__icon"><i class="fa-solid {{ $icon }}" aria-hidden="true"></i></span>
+                    <h3>{{ $title }}</h3>
+                    <p>{{ $description }}</p>
+                    <span class="tool-card__action">{{ $locked ? 'Iniciar sesión para consultar' : $action }} <i class="fa-solid {{ $locked ? 'fa-lock' : 'fa-arrow-right' }}" aria-hidden="true"></i></span>
+                </a>
+            @endforeach
+        </div>
+        <div class="territorial-note">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <p><strong>Datos responsables:</strong> los análisis utilizan exclusivamente las gestiones e indicadores registrados; la plataforma no inventa valores faltantes.</p>
+        </div>
+    </div>
+</section>
 
-    <!-- Footer / includes -->
-    @include('includes.pie')
+<section class="section" id="servicios"><div class="shell"><x-section-heading eyebrow="{{ config('brand.name') }}" title="Formación y tecnología para aprender mejor" /><div class="service-grid">
+    <article class="service-card"><i class="fa-solid fa-laptop-code"></i><h3>Computación</h3><p>Competencias digitales para estudiantes y docentes.</p></article>
+    <article class="service-card"><i class="fa-solid fa-robot"></i><h3>Robótica</h3><p>Aprendizaje práctico, creatividad y pensamiento lógico.</p></article>
+    <article class="service-card"><i class="fa-solid fa-book-open-reader"></i><h3>Apoyo educativo</h3><p>Acompañamiento para fortalecer el aprendizaje escolar.</p></article>
+    <article class="service-card"><i class="fa-solid fa-code"></i><h3>Desarrollo web</h3><p>Herramientas digitales con propósito educativo.</p></article>
+</div></div></section>
 
-    <script src="{{ asset('js/vistas/welcome/menu.js') }}"></script>
-    <script>
-        // Toggle menú móvil y acordeones (mismo que antes)
-        const navToggle = document.getElementById('nav-toggle');
-        const navMobile = document.getElementById('nav-mobile');
-        if (navToggle) {
-            navToggle.addEventListener('click', () => {
-                navMobile.classList.toggle('hidden');
-            });
-        }
-
-        document.querySelectorAll('[data-accordion]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-accordion');
-                const panel = document.getElementById(`acc-${id}`);
-                if (panel) panel.classList.toggle('hidden');
-                btn.querySelector('i')?.classList.toggle('rotate-180');
-            });
-        });
-    </script>
-</body>
-</html>
+<section class="section section--white"><div class="shell"><article class="author-card"><img src="{{ asset(config('brand.author_photo')) }}" alt="David Flores, creador de herramientas educativas en {{ config('brand.name') }}" width="300" height="300"><div><span class="eyebrow">Acerca del autor</span><h2>David Flores</h2><p>Creador de herramientas educativas y representante de {{ config('brand.name') }}. Trabaja en soluciones que acercan información, formación y tecnología a la comunidad educativa boliviana.</p><x-social-links :labels="true" /></div></article></div></section>
+@endsection

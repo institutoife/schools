@@ -84,7 +84,7 @@
     <div class="container">
         <!-- Encabezado con logotipo -->
         <div class="header">
-            <img src="{{ asset('images/logo.png') }}" alt="Logotipo">
+            <img src="{{ asset(config('brand.logo')) }}" alt="Logo de {{ config('brand.name') }}">
             <h1>Predicción para 2025</h1>
            
         </div>

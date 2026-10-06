@@ -9,6 +9,7 @@ use App\Models\Estadistica;
 use App\Models\Ubicacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\RankingsController;
 
 class SchoolController extends Controller
@@ -16,7 +17,7 @@ class SchoolController extends Controller
     // app/Http/Controllers/SchoolController.php
 public function index(Request $request)
 {
-   $search = $request->input('search');
+        $search = trim((string) $request->input('search'));
         $filter = $request->input('filter', 'nombre'); // Valor por defecto
         
         $query = School::query()
@@ -27,12 +28,21 @@ public function index(Request $request)
             $query->where(function($q) use ($search, $filter) {
                 if ($filter === 'codigo') {
                     $q->where('codigo_rue', 'like', "%$search%");
-                } elseif ($filter === 'departamento') {
+                } elseif ($filter === 'zona') {
+                    $q->where('direccion', 'like', "%$search%");
+                } elseif (in_array($filter, ['departamento', 'municipio', 'distrito'], true)) {
                     $q->whereHas('ubicacion', function($q) use ($search) {
-                        $q->where('departamento', 'like', "%$search%");
+                        $filter = request('filter', 'departamento');
+                        $q->where($filter, 'like', "%$search%");
                     });
                 } else {
-                    $q->where('nombre', 'like', "%$search%");
+                    $q->where('nombre', 'like', "%$search%")
+                        ->orWhere('codigo_rue', 'like', "%$search%")
+                        ->orWhereHas('ubicacion', function ($location) use ($search) {
+                            $location->where('departamento', 'like', "%$search%")
+                                ->orWhere('municipio', 'like', "%$search%")
+                                ->orWhere('distrito', 'like', "%$search%");
+                        });
                 }
             });
         }
@@ -41,12 +51,21 @@ public function index(Request $request)
 
         // KPIs y destacados para la portada
         $kpis = RankingsController::buildKpis();
-        $highlights = RankingsController::buildHighlights();
+        $departments = Ubicacion::query()
+            ->select('departamento', DB::raw('COUNT(DISTINCT school_id) as schools_count'))
+            ->whereNotNull('departamento')
+            ->where('departamento', '<>', '')
+            ->groupBy('departamento')
+            ->orderBy('departamento')
+            ->get();
+        $locationStats = [
+            'departments' => $departments->count(),
+            'municipalities' => Ubicacion::whereNotNull('municipio')->where('municipio', '<>', '')->distinct()->count('municipio'),
+            'districts' => Ubicacion::whereNotNull('distrito')->where('distrito', '<>', '')->distinct()->count('distrito'),
+        ];
+        $featuredSchools = School::with('ubicacion')->orderBy('nombre')->limit(6)->get();
 
-        // Mensajes de servicios para animación (todos los campos)
-        $serviceMessages = \App\Models\ServiceMessage::all();
-
-        return view('welcome', compact('schools', 'search', 'filter', 'kpis', 'highlights', 'serviceMessages'));
+        return view('welcome', compact('schools', 'search', 'filter', 'kpis', 'departments', 'locationStats', 'featuredSchools'));
 }
 
     public function welcomeSearch(Request $request)

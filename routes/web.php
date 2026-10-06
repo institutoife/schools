@@ -3,6 +3,7 @@
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\RankingsController;
 use App\Http\Controllers\PanelAplazadosController;
+use App\Http\Controllers\FiscalesPrivadosController;
 use App\Models\School;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,16 @@ use Illuminate\Support\Facades\Route;
 // });
 // Página principal con búsqueda
 Route::get('/', [SchoolController::class, 'index'])->name('home');
+Route::get('/reportes/acceder/{report}', function (string $report) {
+    $target = config("report_access.$report");
+    abort_unless($target, 404);
+
+    if (! auth()->check()) {
+        return redirect()->guest(url('/admin/login'));
+    }
+
+    return redirect()->to(url($target));
+})->name('reports.access');
 Route::get('/probabilidad', [SchoolController::class, 'probabilidad'])->name('probabilidad');
 
 // Detalle del colegio (opcional)
@@ -146,3 +157,8 @@ Route::get('/panel-aplazados-calor', [PanelAplazadosController::class, 'index'])
 Route::get('/panel-aplazados-calor/opciones-ubicacion', [PanelAplazadosController::class, 'opcionesUbicacion'])->name('panel.aplazados.opciones');
 
 Route::get('/panel-aplazados-calor/centros-poblados', [PanelAplazadosController::class, 'centrosPoblados'])->name('panel.aplazados.centros');
+
+// Ruta para análisis de fiscales vs privados
+Route::get('/fiscales-privados', [\App\Http\Controllers\FiscalesPrivadosController::class, 'index'])->name('fiscales-privados.index');
+Route::get('/api/fiscales-privados', [\App\Http\Controllers\FiscalesPrivadosController::class, 'obtenerDatos'])->name('fiscales-privados.datos');
+Route::get('/api/fiscales-privados/opciones', [\App\Http\Controllers\FiscalesPrivadosController::class, 'opcionesUbicacion'])->name('fiscales-privados.opciones');

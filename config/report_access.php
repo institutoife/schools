@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'buscar' => '/#buscar',
+    'colegios-reprobados' => '/colegios-mas-reprobados',
+    'ranking-colegio' => '/ranking-mi-colegio',
+    'ranking-matricula' => '/rankings?tipo=matricula',
+    'abandono-escolar' => '/rankings?tipo=abandono',
+    'infraestructura' => '/rankings?tipo=infraestructura',
+    'mapa-interactivo' => '/densidad-educativa',
+    'aplazados-municipio-resumen' => '/municipios-aplazados',
+    'mapa-calor-aplazados' => '/panel-aplazados-calor',
+    'dependencia' => '/fiscales-privados',
+    'area' => '/reprobados',
+    'genero' => '/reprobados',
+    'colegios-departamento' => '/densidad-educativa',
+    'evolucion-matricula' => '/rankings?tipo=matricula&vista=evolucion',
+    'tasa-promocion' => '/rankings?tipo=promocion&nivel=departamento',
+    'tasa-reprobacion' => '/rankings?tipo=reprobacion&nivel=departamento',
+    'tasa-abandono' => '/rankings?tipo=abandono&nivel=departamento',
+    'aplazados-nacional' => '/ranking-aplazados',
+    'aplazados-departamento' => '/rankings?tipo=reprobacion&nivel=departamento',
+    'aplazados-provincia' => '/rankings?tipo=reprobacion&nivel=provincia',
+    'aplazados-municipio' => '/rankings?tipo=reprobacion&nivel=municipio',
+    'aplazados-distrito' => '/distritos-aplazados',
+    'aplazados-distrito-municipal' => '/distritos-municipales-aplazados',
+];
