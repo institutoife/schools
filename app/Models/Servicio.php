@@ -10,4 +10,10 @@ class Servicio extends Model
     use HasFactory;
 
     protected $guarded = [];
+    protected $casts = [
+        'agua' => 'boolean',
+        'electricidad' => 'boolean',
+        'banos' => 'boolean',
+        'internet' => 'boolean',
+    ];
 }

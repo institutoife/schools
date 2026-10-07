@@ -53,9 +53,9 @@
         @endforeach
     </div></article>
 
-    <article class="info-card span-2"><x-section-heading align="left" eyebrow="Datos registrados" title="Indicadores educativos" /><div class="metric-grid">
-        @forelse($estadisticas->sortByDesc('anio')->take(12) as $stat)<div class="metric"><strong>{{ number_format((int)$stat->total) }}</strong><span>{{ ucfirst($stat->categoria ?: 'Indicador') }} · {{ $stat->anio ?: 'Sin año' }}</span></div>@empty<div class="empty-state">No existen indicadores estadísticos disponibles para este colegio.</div>@endforelse
-    </div></article>
+    <article class="info-card span-2">
+        @include('schools.history', ['history' => $history])
+    </article>
 </div></section>
 @endsection
 

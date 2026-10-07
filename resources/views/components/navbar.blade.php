@@ -6,6 +6,7 @@
             <a href="{{ route('home') }}">Inicio</a>
             <a href="{{ route('home') }}#explorar">Departamentos</a>
             <a href="{{ route('home') }}#herramientas">Análisis</a>
+            <a href="{{ route('aplazados.historia') }}">Historia de aplazados</a>
             <a href="{{ route('home') }}#servicios">Servicios</a>
             @auth
                 <a href="{{ url('/rankings') }}">Reportes</a>

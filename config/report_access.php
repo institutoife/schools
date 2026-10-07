@@ -19,7 +19,7 @@ return [
     'tasa-reprobacion' => '/rankings?tipo=reprobacion&nivel=departamento',
     'tasa-abandono' => '/rankings?tipo=abandono&nivel=departamento',
     'aplazados-nacional' => '/ranking-aplazados',
-    'aplazados-departamento' => '/rankings?tipo=reprobacion&nivel=departamento',
+    'aplazados-departamento' => '/historia-aplazados',
     'aplazados-provincia' => '/rankings?tipo=reprobacion&nivel=provincia',
     'aplazados-municipio' => '/rankings?tipo=reprobacion&nivel=municipio',
     'aplazados-distrito' => '/distritos-aplazados',

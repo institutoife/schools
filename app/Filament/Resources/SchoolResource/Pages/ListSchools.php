@@ -13,6 +13,9 @@ class ListSchools extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('importarMinisterio')
+                ->label('Actualizar desde Ministerio')
+                ->url(\App\Filament\Pages\MinistrySchoolImport::getUrl()),
             Actions\CreateAction::make(),
         ];
     }

@@ -132,9 +132,10 @@ public function index(Request $request)
         $servicios = $school->servicios;
         $ambientes = $school->ambientes;
         $estadisticas = $school->estadisticas;
+        $history = app(\App\Services\EducationHistory::class)->school($estadisticas);
         $data= compact('school', 'ubicaciones', 'servicios', 'ambientes', 'estadisticas');
         //return $data;
-        return view('schools.vista', compact('school', 'ubicaciones', 'servicios', 'ambientes','estadisticas'));
+        return view('schools.vista', compact('school', 'ubicaciones', 'servicios', 'ambientes','estadisticas', 'history'));
     
     }
 
