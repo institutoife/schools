@@ -136,7 +136,7 @@ if (root) {
             return;
         }
         const ns = 'http://www.w3.org/2000/svg';
-        const svg = document.createElementNS(ns, 'svg'); svg.setAttribute('viewBox', '0 0 560 400');
+        const svg = document.createElementNS(ns, 'svg'); svg.setAttribute('viewBox', '40 25 480 350');
         const make = (tag, attrs, text, parent = svg) => { const node = document.createElementNS(ns, tag); Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, String(value))); if (text !== undefined) node.textContent = text; parent.append(node); return node; };
         make('title', {}, title);
         make('ellipse', {cx: 280, cy: 220, rx: 218, ry: 142, fill: blue, opacity: .12, class: 'eh-pie-shadow'});
@@ -151,7 +151,22 @@ if (root) {
         }
         const labels = result.slices.filter(slice => slice.percent >= 8).map(slice => {
             const angle = (slice.start + slice.end) / 2;
-            const label = make('text', {x: 280 + 215 * .6 * Math.cos(angle), y: 190 + 140 * .6 * Math.sin(angle), 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'eh-pie-label', opacity: 0}, percent(slice.percent));
+            const compact = slice.percent < 18;
+            const label = make('g', {
+                transform: 'translate(' + (280 + 215 * .6 * Math.cos(angle)) + ' ' + (190 + 140 * .6 * Math.sin(angle)) + ')',
+                class: 'eh-pie-annotation' + (compact ? ' eh-pie-annotation-compact' : ''), opacity: 0, 'aria-hidden': 'true',
+            });
+            const icon = make('g', {transform: compact ? 'translate(-12 -32)' : 'translate(-18 -44) scale(1.5)', class: 'eh-pie-sex-icon'}, undefined, label);
+            if (slice.label === 'Mujeres') {
+                make('circle', {cx: 12, cy: 7, r: 5}, undefined, icon);
+                make('path', {d: 'M12 12v10M7 18h10'}, undefined, icon);
+            } else if (slice.label === 'Hombres') {
+                make('circle', {cx: 9, cy: 15, r: 6}, undefined, icon);
+                make('path', {d: 'M13.5 10.5 22 2M15 2h7v7'}, undefined, icon);
+            } else {
+                make('text', {x: 12, y: 18, 'text-anchor': 'middle', class: 'eh-pie-unknown-icon'}, '?', icon);
+            }
+            make('text', {x: 0, y: compact ? 15 : 22, 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'eh-pie-label'}, percent(slice.percent), label);
             return {label, slice};
         });
         const draw = progress => {

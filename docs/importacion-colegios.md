@@ -10,6 +10,21 @@ Al terminar un departamento, genera su JSON y lo importa autom?ticamente en una 
 
 Las fichas tienen hasta tres intentos, l?mite de conexi?n y tiempo de respuesta. Los errores aparecen por RUE y el sistema sigue con otras fichas. **Reintentar fichas fallidas** consulta las fichas pendientes de error y vuelve a importar el departamento. Los procesos incompletos muestran **con_errores**. Los JSON parciales contienen solo fichas v?lidas y el reporte identifica las pendientes. Al terminar puedes descargar los nueve JSON y el reporte en ZIP.
 
+## Reutilizar la descarga local en el servidor (flujo anual recomendado)
+
+1. En local, carga el Excel en `/admin/ministry-school-import` y espera a que termine la consulta al Ministerio. Resuelve las fichas fallidas y revisa el reporte antes de llevarlo al servidor.
+2. Pulsa **Descargar 9 JSON y reporte**. Conserva ese ZIP como respaldo de la descarga anual.
+3. En la misma sección del servidor, usa **Importar JSON ya descargados**. Sube el ZIP directamente o selecciona los archivos `colegios_departamento.json`, sin renombrarlos. Puedes actualizar uno, varios o los nueve departamentos.
+4. Pulsa **Importar JSON a la base de datos** y sigue el progreso por departamento. Esta opción no realiza consultas HTTP al Ministerio ni necesita el Excel. El trabajo aparece en **Importaciones guardadas** con origen **JSON**.
+
+Los archivos se validan por completo antes de registrar el trabajo: estructura, RUE de ocho dígitos, RUE repetidos, departamento del archivo y gestión 2025. Los datos de ubicación oficial se conservan aunque difieran de la clasificación del Excel. No se admiten los antiguos JSON que contienen solamente RUE y departamento. Los JSON vacíos de un departamento son válidos dentro de una carga que contenga colegios.
+
+La importación avanza en lotes de 50 colegios y guarda su posición. Cada lote usa una transacción; si falla, se revierte ese lote y puede reintentarse sin repetir los lotes terminados. Los departamentos no cargados quedan como **No cargado**. Los nuevos se crean y los existentes se actualizan por RUE; se preservan los campos ausentes y no se eliminan colegios. Subir de nuevo el mismo archivo no duplica colegios ni estadísticas. Una descarga parcial solo actualiza los colegios presentes: importar el ZIP no completa las fichas ausentes.
+
+Mantén el panel abierto para que avance, o usa el ejecutor descrito abajo para continuar con el navegador cerrado. La descarga lenta de fichas se realiza una sola vez en local; en el servidor solo se valida e importa. Para el próximo ciclo anual deberás obtener una nueva descarga local cuando el Ministerio publique los datos. El extractor y el validador actuales están limitados a datos hasta 2025 y deben adaptarse a la nueva gestión antes de importar años posteriores.
+
+El panel admite hasta 50 MB por archivo y 100 MB de contenido JSON en total (también al descomprimir el ZIP). Livewire tiene configurado el límite de 50 MB. PHP y el servidor web deben permitir la carga: por ejemplo, `upload_max_filesize = 50M` y `post_max_size = 64M` para un ZIP; para varios JSON grandes, sube los departamentos por separado o aumenta el límite total del servidor. Reinicia PHP/Apache después de cambiar su configuración. Los archivos se guardan en almacenamiento privado.
+
 ## Ejecutor del servidor
 
 La secci?n avanza autom?ticamente mientras est? abierta. El progreso queda guardado y puedes retomarlo desde **Importaciones guardadas**. Para que contin?e con el navegador cerrado, mantener activo:

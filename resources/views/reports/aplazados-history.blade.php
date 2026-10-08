@@ -43,8 +43,16 @@
                 <div id="eh-pie-chart" class="eh-pie-chart" role="img" aria-label="Distribución circular de hombres y mujeres aplazados"></div>
                 <div class="eh-pie-summary" aria-live="polite">
                     <p class="eh-pie-total">Total de aplazados<strong id="eh-pie-total">—</strong></p>
-                    <div class="eh-pie-stat eh-pie-female"><span>Mujeres</span><strong id="eh-pie-women">—</strong><span id="eh-pie-women-share">—</span></div>
-                    <div class="eh-pie-stat eh-pie-male"><span>Hombres</span><strong id="eh-pie-men">—</strong><span id="eh-pie-men-share">—</span></div>
+                    <div class="eh-pie-stat eh-pie-female">
+                        <span class="eh-pie-stat-heading"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="5"/><path d="M12 12v10M7 18h10"/></svg>Mujeres</span>
+                        <strong id="eh-pie-women">—</strong>
+                        <span class="eh-pie-share"><b id="eh-pie-women-share">—</b><small>del total</small></span>
+                    </div>
+                    <div class="eh-pie-stat eh-pie-male">
+                        <span class="eh-pie-stat-heading"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="15" r="6"/><path d="M13.5 10.5 22 2M15 2h7v7"/></svg>Hombres</span>
+                        <strong id="eh-pie-men">—</strong>
+                        <span class="eh-pie-share"><b id="eh-pie-men-share">—</b><small>del total</small></span>
+                    </div>
                 </div>
             </div>
             <div class="eh-legend"><span><i class="eh-female"></i> Mujeres</span><span><i class="eh-male"></i> Hombres</span><span id="eh-pie-unknown-legend" hidden><i class="eh-unknown"></i> Sin desglose</span></div>

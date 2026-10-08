@@ -47,6 +47,78 @@ class MinistrySchoolSync
         return $id;
     }
 
+    public function createFromJson(array $files): string
+    {
+        $id = (string) Str::uuid();
+        $directory = $this->directory($id);
+        File::ensureDirectoryExists($directory.'/json');
+        File::ensureDirectoryExists($directory.'/lotes');
+        $departments = [];
+        try {
+            // Stage one department at a time; register work only after all files validate.
+            app(MinistrySchoolJson::class)->readFiles($files, function (string $slug, array $records) use ($directory, &$departments) {
+                $schools = [];
+                foreach ($records as $record) {
+                    $schools[$record['general']['codigo_rue']] = ['estado' => 'leido', 'intentos' => 0, 'error' => null];
+                }
+                $departments[$slug] = [
+                    'nombre' => array_search($slug, SchoolExcelImporter::DEPARTMENTS, true), 'estado' => 'pendiente',
+                    'colegios' => $schools, 'importados' => 0, 'resultado' => null, 'error' => null,
+                ];
+                File::put($directory.'/json/colegios_'.$slug.'.json', json_encode($records, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+                foreach (array_chunk($records, 50) as $index => $batch) {
+                    File::put($directory.'/lotes/'.$slug.'-'.$index.'.json', json_encode($batch, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+                }
+            });
+        } catch (\Throwable $e) {
+            File::deleteDirectory($directory);
+            throw $e;
+        }
+        foreach (SchoolExcelImporter::DEPARTMENTS as $name => $slug) {
+            if (isset($departments[$slug])) continue;
+            $departments[$slug] = [
+                'nombre' => $name, 'estado' => 'omitido',
+                'colegios' => [], 'importados' => 0, 'resultado' => null, 'error' => null,
+            ];
+            File::put($directory.'/json/colegios_'.$slug.'.json', '[]');
+        }
+        $this->save($id, [
+            'id' => $id, 'gestion' => 2025, 'origen' => 'json', 'creado_en' => now()->toIso8601String(),
+            'estado' => 'procesando', 'ultimo_rue' => null, 'departamentos' => $departments,
+        ]);
+        return $id;
+    }
+
+    private function tickJson(string $id, array &$state): void
+    {
+        foreach ($state['departamentos'] as $slug => &$department) {
+            if (in_array($department['estado'], ['completo', 'omitido', 'con_errores'], true)) continue;
+            try {
+                $directory = $this->directory($id);
+                $batchPath = $directory.'/lotes/'.$slug.'-'.intdiv($department['importados'], 50).'.json';
+                if (is_dir($directory.'/lotes')) {
+                    $batch = count($department['colegios']) === 0 ? [] : json_decode(File::get($batchPath), true, 512, JSON_THROW_ON_ERROR);
+                } else {
+                    $rows = json_decode(File::get($directory.'/json/colegios_'.$slug.'.json'), true, 512, JSON_THROW_ON_ERROR);
+                    $batch = array_slice($rows, $department['importados'], 50);
+                }
+                $counts = app(SchoolExcelImporter::class)->import($batch);
+                $department['resultado'] ??= ['nuevos' => 0, 'actualizados' => 0, 'sin_cambios' => 0];
+                foreach ($counts as $key => $value) $department['resultado'][$key] += $value;
+                $department['importados'] += count($batch);
+                $department['estado'] = $department['importados'] >= count($department['colegios']) ? 'completo' : 'procesando';
+                $department['error'] = null;
+                if ($batch) $state['ultimo_rue'] = end($batch)['general']['codigo_rue'];
+            } catch (\Throwable $e) {
+                $department['error'] = mb_substr($e->getMessage(), 0, 1000);
+                $department['estado'] = 'con_errores';
+            }
+            return;
+        }
+        unset($department);
+        $state['estado'] = count(array_filter($state['departamentos'], fn ($department) => $department['estado'] === 'con_errores')) ? 'con_errores' : 'completo';
+    }
+
     public function change(string $id, string $action): void
     {
         $this->locked($id, function (array &$state) use ($action) {
@@ -58,7 +130,7 @@ class MinistrySchoolSync
                         if ($school['estado'] === 'error') $school = ['estado' => 'pendiente', 'intentos' => 0, 'error' => null];
                     }
                     unset($school);
-                    if ($department['estado'] !== 'completo') $department['estado'] = 'pendiente';
+                    if (!in_array($department['estado'], ['completo', 'omitido'], true)) $department['estado'] = 'pendiente';
                     $department['error'] = null;
                 }
                 unset($department);
@@ -83,6 +155,10 @@ class MinistrySchoolSync
     {
         $this->locked($id, function (array &$state) use ($id) {
             if ($state['estado'] !== 'procesando') return;
+            if (($state['origen'] ?? '') === 'json') {
+                $this->tickJson($id, $state);
+                return;
+            }
             $directory = $this->directory($id);
             foreach ($state['departamentos'] as $slug => &$department) {
                 if (in_array($department['estado'], ['completo', 'con_errores'], true)) continue;
@@ -138,7 +214,7 @@ class MinistrySchoolSync
         foreach (File::directories($root) as $directory) {
             if (!is_file($directory.'/estado.json')) continue;
             $state = $this->state(basename($directory));
-            $result[] = ['id' => $state['id'], 'fecha' => $state['creado_en'], 'estado' => $state['estado']];
+            $result[] = ['id' => $state['id'], 'fecha' => $state['creado_en'], 'estado' => $state['estado'], 'origen' => $state['origen'] ?? 'excel'];
         }
         usort($result, fn ($a, $b) => strcmp($b['fecha'], $a['fecha']));
         return $result;
