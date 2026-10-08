@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'historial-aplazados' => '/historia-aplazados',
     'buscar' => '/#buscar',
     'colegios-reprobados' => '/colegios-mas-reprobados',
     'ranking-colegio' => '/ranking-mi-colegio',

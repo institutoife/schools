@@ -1,4 +1,5 @@
 import {chartScale, sortNumeric, sexPieSlices, pieSectorPath} from './education-history-utils.js';
+import {createCounterAnimation} from './education-counters.js';
 
 const root = document.getElementById('education-report');
 if (root) {
@@ -22,9 +23,10 @@ if (root) {
     pieYear.value = String(selectedYear);
     let timer = null, sortField = 'year', sortDirection = 'asc', chartKey = '';
     let pieKey = '', pieAnimationFrame = 0, pieAnimate = null;
+    let counterKey = '', counterAnimation = null;
     const turquoise = 'rgb(38,186,165)', blue = 'rgb(55,95,122)';
     const animationObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
-        entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('eh-animating'); if (entry.target.id === 'eh-pie-chart') pieAnimate?.(); animationObserver.unobserve(entry.target); } });
+        entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('eh-animating'); if (entry.target.id === 'eh-pie-chart') pieAnimate?.(); if (entry.target.id === 'eh-summary') counterAnimation?.play(); animationObserver.unobserve(entry.target); } });
     }, {threshold: .15}) : null;
 
     function stop() { clearInterval(timer); timer = null; setText('eh-play', '▶ Reproducir años'); }
@@ -39,10 +41,23 @@ if (root) {
         setText('eh-main-title', 'HISTORIAL APLAZADOS ' + departmentName(department.value));
         setText('eh-sex-title', 'APLAZADOS HOMBRES VS. MUJERES — ' + departmentName(department.value));
         setText('eh-status', row.projection ? 'Escenario estimado · no oficial' : 'Historia registrada');
-        setText('eh-total', number(row.total)); setText('eh-rate', percent(row.tasa));
-        setText('eh-men', number(row.hombres)); setText('eh-women', number(row.mujeres));
-        setText('eh-men-share', Number.isFinite(row.porcentaje_hombres) ? percent(row.porcentaje_hombres) + ' del total de aplazados' : 'Proporción no disponible');
-        setText('eh-women-share', Number.isFinite(row.porcentaje_mujeres) ? percent(row.porcentaje_mujeres) + ' del total de aplazados' : 'Proporción no disponible');
+        const nextCounterKey = department.value + '|' + selectedYear;
+        if (nextCounterKey !== counterKey) {
+            counterKey = nextCounterKey;
+            counterAnimation?.cancel();
+            const summary = get('eh-summary');
+            animationObserver?.unobserve(summary);
+            const share = value => Number.isFinite(value) ? percent(value) + ' del total de aplazados' : 'Proporción no disponible';
+            counterAnimation = createCounterAnimation([
+                {element: get('eh-total'), value: row.total, format: number},
+                {element: get('eh-rate'), value: row.tasa, format: percent},
+                {element: get('eh-men'), value: row.hombres, format: number},
+                {element: get('eh-women'), value: row.mujeres, format: number},
+                {element: get('eh-men-share'), value: row.porcentaje_hombres, format: share},
+                {element: get('eh-women-share'), value: row.porcentaje_mujeres, format: share},
+            ]);
+            if (animationObserver) animationObserver.observe(summary); else counterAnimation.play();
+        }
         const prior = rows.find(item => item.year === selectedYear - 1);
         let change = 'No hay un año anterior comparable';
         if (prior && prior.total !== null && row.total !== null) {

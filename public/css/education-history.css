@@ -89,6 +89,8 @@
     .eh-pie-stat strong{font-size:2.8rem}
     .eh-pie-share b{font-size:1.8rem}
 }
+.eh-counter-accessible{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.eh-kpi strong,.eh-kpi p{font-variant-numeric:tabular-nums}
 .eh-reveal-window{transform-origin:118px 0;animation:eh-uncover 3.2s linear both}
 .eh-point-reveal{animation:eh-point-appear .18s linear both;animation-delay:var(--point-delay,0s)}
 .eh-chart:not(.eh-animating) .eh-reveal-window,.eh-chart:not(.eh-animating) .eh-point-reveal{animation-play-state:paused}

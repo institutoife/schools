@@ -17,7 +17,7 @@
             <button class="eh-button eh-primary" id="eh-play" type="button">▶ Reproducir años</button><button class="eh-button" id="eh-present" type="button">Modo video</button>
         </section>
         <nav class="eh-year-tabs" aria-label="Seleccionar gestión">@foreach($reportYears as $year)<button type="button" data-year="{{ $year }}" aria-pressed="false">{{ $year }}@if($year===$projectionYear)<small>Proyección</small>@endif</button>@endforeach</nav>
-        <section class="eh-focus" aria-live="polite">
+        <section class="eh-focus" id="eh-summary" aria-live="polite">
             <div class="eh-focus-top"><div><span class="eh-eyebrow" id="eh-status">Datos registrados</span><h2><span id="eh-name">Santa Cruz</span> <span class="eh-focus-year" id="eh-year">{{ $lastActualYear }}</span></h2></div><span class="eh-source">Fuente: registros del sistema / Ministerio de Educación</span></div>
             <div class="eh-kpis"><article class="eh-kpi eh-main-kpi"><span>Aplazados en total</span><strong id="eh-total">—</strong><p id="eh-change">Selecciona un año</p></article><article class="eh-kpi"><span>Tasa de aplazados</span><strong id="eh-rate">—</strong><p>Por cada 100 estudiantes matriculados con datos comparables</p></article><article class="eh-kpi"><span>Hombres aplazados</span><strong id="eh-men">—</strong><p id="eh-men-share">—</p></article><article class="eh-kpi"><span>Mujeres aplazadas</span><strong id="eh-women">—</strong><p id="eh-women-share">—</p></article></div>
             <div class="eh-split" aria-label="Distribución de aplazados por sexo"><div id="eh-men-bar"></div><div id="eh-women-bar"></div></div><p id="eh-sex-note" class="eh-note"></p>

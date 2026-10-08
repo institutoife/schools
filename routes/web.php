@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Route;
 // });
 // Página principal con búsqueda
 Route::get('/', [SchoolController::class, 'index'])->name('home');
-Route::get('/historia-aplazados', \App\Http\Controllers\AplazadosHistoryController::class)->name('aplazados.historia');
+Route::get('/historia-aplazados', \App\Http\Controllers\AplazadosHistoryController::class)->middleware('auth')->name('aplazados.historia');
 Route::get('/reportes/acceder/{report}', function (string $report) {
     $target = config("report_access.$report");
     abort_unless($target, 404);

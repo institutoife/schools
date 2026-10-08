@@ -41,6 +41,7 @@ class EducationHistoryTest extends TestCase
 
     public function test_department_rates_use_same_schools_and_deduplicate_statistics_and_locations(): void
     {
+        $this->actingAs(new \App\Models\User(['name' => 'Prueba', 'email' => 'prueba@ife.bo']));
         config(['database.default'=>'sqlite','database.connections.sqlite.database'=>':memory:']);
         DB::purge('sqlite');
         Schema::create('estadisticas', function(Blueprint $t){$t->id();$t->integer('school_id');$t->integer('anio');$t->string('categoria');$t->string('total')->nullable();$t->integer('hombre')->nullable();$t->integer('mujer')->nullable();});

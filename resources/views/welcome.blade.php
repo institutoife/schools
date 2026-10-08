@@ -61,6 +61,7 @@
 
 @php
     $analysisTools = [
+        ['historial-aplazados', 'Historia educativa', 'Historial de aplazados', 'Consulta la evolución anual por departamento, compara hombres y mujeres y explora porcentajes y proyecciones.', 'fa-chart-line', 'Consultar historial'],
         ['buscar', 'Directorio', 'Buscar un colegio', 'Encuentra cualquier institución por nombre, código RUE, distrito o ubicación.', 'fa-magnifying-glass', 'Ir al buscador'],
         ['colegios-reprobados', 'Reprobación', 'Colegios con más reprobados', 'Lista de colegios con mayor cantidad de estudiantes reprobados, por año.', 'fa-chart-line', 'Ver colegios'],
         ['ranking-colegio', 'Rankings', 'Ranking tu colegio', 'Consulta el ranking de tu colegio a nivel Nacional, Departamental, Provincial, Municipal y Distrital.', 'fa-school', 'Ver ranking'],
