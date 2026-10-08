@@ -56,9 +56,33 @@ class EducationHistoryTest extends TestCase
         $this->assertSame(100,$row['base_tasa']);
         $this->assertSame(2,$row['colegios']);
         $this->assertFalse($row['sexo_completo']);
-        $this->assertNull($row['porcentaje_hombres']);
+        $this->assertSame(20.0,$row['porcentaje_hombres']);
+        $this->assertSame(13.33,$row['porcentaje_mujeres']);
         $this->assertNull($data['BENI'][4]['total']);
         $this->assertNull($data['SANTA CRUZ'][5]['total']);
-        $this->get('/historia-aplazados')->assertOk()->assertSee('Modo video')->assertSee('Cómo leer la proyección de 2026');
+        $this->get('/historia-aplazados')->assertOk()->assertSee('Modo video')->assertSee('Cómo leer la proyección de 2026')
+            ->assertSee('HISTORIAL APLAZADOS SANTA CRUZ')->assertSee('APLAZADOS HOMBRES VS. MUJERES — SANTA CRUZ')
+            ->assertSee('id="eh-pie-year"', false)->assertSee('id="eh-replay-pie"', false)
+            ->assertDontSee('Mujeres · turquesa')->assertDontSee('Hombres · azul');
+        DB::table('estadisticas')->where('school_id',2)->where('categoria','reprobados')->update(['hombre'=>0,'mujer'=>20]);
+        $complete = (new EducationHistory)->departments()['SANTA CRUZ'][4];
+        $this->assertTrue($complete['sexo_completo']);
+        $this->assertSame(20.0,$complete['porcentaje_hombres']);
+        $this->assertSame(80.0,$complete['porcentaje_mujeres']);
+        foreach (range(2023,2024) as $year) {
+            DB::table('estadisticas')->insert(['school_id'=>1,'anio'=>$year,'categoria'=>'reprobados','total'=>10,'hombre'=>0,'mujer'=>10]);
+            DB::table('estadisticas')->insert(['school_id'=>1,'anio'=>$year,'categoria'=>'matricula','total'=>100,'hombre'=>50,'mujer'=>50]);
+        }
+        $projected = (new EducationHistory)->departments()['SANTA CRUZ'][5];
+        $this->assertSame(2026,$projected['year']);
+        $this->assertNotNull($projected['hombres']);
+        $this->assertSame($projected['total'],$projected['hombres']+$projected['mujeres']);
+        $this->assertNotNull($projected['matricula']);
+        $this->travelTo(now()->setDate(2026,10,8));
+        DB::table('estadisticas')->insert(['school_id'=>1,'anio'=>2026,'categoria'=>'reprobados','total'=>12,'hombre'=>6,'mujer'=>6]);
+        $next = (new EducationHistory)->departments()['SANTA CRUZ'];
+        $this->assertSame(2027,end($next)['year']);
+        $this->assertTrue(end($next)['projection']);
+        $this->get('/historia-aplazados')->assertOk()->assertSee('Cómo leer la proyección de 2027')->assertSee('eh-sex-chart')->assertSee('eh-panorama-sort');
     }
 }
